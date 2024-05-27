@@ -2,12 +2,18 @@
 <html>
 <head>
     <title>Key's DEC</title>
-    <link rel="stylesheet" type="text/css" href="styles.css">
+    <link rel="stylesheet" type="text/css" href="dark-mode.css" id="theme-link">
 </head>
 <body>
     <div class="container">
-        <h1>Key's DEC</h1> 
-
+        <h1>Key's DEC</h1>
+        <div class="theme-toggle">
+            <span>Light Mode</span>
+            <label class="theme-toggle-switch">
+                <input type="checkbox" id="theme-toggle">
+                <span class="slider"></span>
+            </label>
+        </div>
         <div id="drop-area" class="drop-area">
             <p>Drop file here or</p>
             <button id="browse-button" class="button">Browse</button>
@@ -65,6 +71,8 @@
     const toggle = document.getElementById('toggle');
     const toggleLabel = document.getElementById('toggle-label');
     const resultButtons = document.getElementById('result-buttons');
+    const themeToggle = document.getElementById('theme-toggle');
+    const themeLink = document.getElementById('theme-link');
 
     let selectedFile = null;
     let outputFolder = null;
@@ -172,6 +180,14 @@
 
     newDecButton.addEventListener('click', () => {
       location.reload();
+    });
+
+    themeToggle.addEventListener('change', (event) => {
+      if (event.target.checked) {
+        themeLink.setAttribute('href', 'light-mode.css');
+      } else {
+        themeLink.setAttribute('href', 'dark-mode.css');
+      }
     });
   </script>
 </body>
