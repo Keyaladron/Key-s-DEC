@@ -1,0 +1,11 @@
+{
+  "name": "keydec",
+  "version": "1.0.0",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^13.1.7"
+  }
+}

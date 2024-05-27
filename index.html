@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Key's DEC</title>
+    <link rel="stylesheet" type="text/css" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Key's DEC</h1> 
+
+        <div id="drop-area" class="drop-area">
+            <p>Drop file here or</p>
+            <button id="browse-button" class="button">Browse</button>
+        </div>
+
+        <div id="file-label" class="file-label">No file selected</div>
+        <div id="save-location" class="save-location">Save Location: Default (Same as input file)</div>
+
+        <div class="options">
+            <div class="toggle-container">
+                <span>Basic</span>
+                <label id="toggle-label" class="toggle-pill">
+                    <input type="checkbox" id="toggle">
+                    <span class="slider"></span>
+                </label>
+                <span>Nitro</span>
+            </div>
+            <button id="save-button" class="button">Change Save Location</button>
+        </div>
+
+        <div id="progress-bar">
+            <div id="progress-bar-fill"></div>
+            <div id="progress-label">Pass 1: 0%</div>
+        </div>
+
+        <div class="actions">
+            <button id="convert-button" class="button">Convert</button>
+            <button id="cancel-button" class="button" style="display:none;">Cancel</button>
+        </div>
+
+        <div class="result-buttons" id="result-buttons" style="display:none;">
+            <button id="open-location" class="button">Open File Location</button>
+            <button id="preview" class="button">Preview</button>
+            <button id="new-dec" class="button">New DEC</button>
+        </div>
+    </div>
+
+    <script>
+    const { ipcRenderer } = require('electron');
+    const path = require('path');
+
+    const dropArea = document.getElementById('drop-area');
+    const browseButton = document.getElementById('browse-button');
+    const fileLabel = document.getElementById('file-label');
+    const convertButton = document.getElementById('convert-button');
+    const cancelButton = document.getElementById('cancel-button');
+    const saveButton = document.getElementById('save-button');
+    const progressBar = document.getElementById('progress-bar');
+    const progressBarFill = document.getElementById('progress-bar-fill');
+    const progressLabel = document.getElementById('progress-label');
+    const openLocationButton = document.getElementById('open-location');
+    const previewButton = document.getElementById('preview');
+    const newDecButton = document.getElementById('new-dec');
+    const saveLocation = document.getElementById('save-location');
+    const toggle = document.getElementById('toggle');
+    const toggleLabel = document.getElementById('toggle-label');
+    const resultButtons = document.getElementById('result-buttons');
+
+    let selectedFile = null;
+    let outputFolder = null;
+    let outputFile = null;
+    let conversionInProgress = false;
+
+    dropArea.addEventListener('dragover', (event) => {
+      event.preventDefault();
+    });
+
+    dropArea.addEventListener('drop', (event) => {
+      event.preventDefault();
+      selectedFile = event.dataTransfer.files[0];
+      fileLabel.innerText = selectedFile.path;
+      outputFolder = path.dirname(selectedFile.path);
+      saveLocation.innerText = `Save Location: ${outputFolder}`;
+    });
+
+    browseButton.addEventListener('click', () => {
+      ipcRenderer.invoke('open-file-dialog').then((file) => {
+        if (file) {
+          selectedFile = file;
+          fileLabel.innerText = selectedFile;
+          outputFolder = path.dirname(file);
+          saveLocation.innerText = `Save Location: ${outputFolder}`;
+        }
+      });
+    });
+
+    saveButton.addEventListener('click', () => {
+      ipcRenderer.invoke('open-save-dialog').then((folder) => {
+        if (folder) {
+          outputFolder = folder;
+          saveLocation.innerText = `Save Location: ${folder}`;
+        }
+      });
+    });
+
+    convertButton.addEventListener('click', () => {
+      if (!selectedFile) {
+        alert('Please select a file first.');
+        return;
+      }
+      const conversionType = toggle.checked ? 'nitro' : 'basic';
+      ipcRenderer.send('convert', { file: selectedFile, type: conversionType, outputFolder });
+      conversionInProgress = true;
+      progressBar.style.display = 'block';
+      convertButton.style.display = 'none';
+      cancelButton.style.display = 'block';
+      dropArea.style.display = 'none';
+      browseButton.style.display = 'none';
+      toggleLabel.style.display = 'none';
+      saveButton.style.display = 'none';
+    });
+
+    cancelButton.addEventListener('click', () => {
+      if (conversionInProgress) {
+        ipcRenderer.send('cancel-conversion');
+      }
+    });
+
+    ipcRenderer.on('conversion-progress', (event, { pass, progress }) => {
+      progressLabel.innerText = `Pass ${pass}: ${progress}%`;
+      progressBarFill.style.width = `${progress}%`;
+    });
+
+    ipcRenderer.on('conversion-complete', (event, { message, outputFile: newOutputFile }) => {
+      alert(message);
+      progressBar.style.display = 'none';
+      cancelButton.style.display = 'none';
+      resultButtons.style.display = 'flex';
+      outputFile = newOutputFile;
+      conversionInProgress = false;
+    });
+
+    ipcRenderer.on('conversion-cancelled', (event, { message }) => {
+      alert(message);
+      progressBar.style.display = 'none';
+      cancelButton.style.display = 'none';
+      convertButton.style.display = 'block';
+      dropArea.style.display = 'block';
+      browseButton.style.display = 'block';
+      toggleLabel.style.display = 'block';
+      saveButton.style.display = 'block';
+      conversionInProgress = false;
+    });
+
+    ipcRenderer.on('delete-output-file', (event, filePath) => {
+      try {
+          if (fs.existsSync(filePath)) {
+              fs.unlinkSync(filePath);
+          } 
+      } catch (error) {
+          console.error("Error deleting file:", error);
+      } 
+    });
+
+    openLocationButton.addEventListener('click', () => {
+      ipcRenderer.send('open-file-location', path.dirname(outputFile));
+    });
+
+    previewButton.addEventListener('click', () => {
+      ipcRenderer.send('preview-file', outputFile);
+    });
+
+    newDecButton.addEventListener('click', () => {
+      location.reload();
+    });
+  </script>
+</body>
+</html>
