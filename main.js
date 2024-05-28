@@ -55,7 +55,9 @@ ipcMain.on('convert', (event, { file, type, outputFolder }) => {
   if (!outputFolder) {
     outputFolder = path.dirname(file);
   }
-  const output_file = path.join(outputFolder, `${path.basename(file, path.extname(file))}_${type}.mp4`);
+  
+  const timestamp = new Date().toISOString().replace(/[-:.]/g, '');
+  const output_file = path.join(outputFolder, `${path.basename(file, path.extname(file))}_${timestamp}_${type}.mp4`);
   const commands = getFfmpegCommands(type, file, output_file);
   
   if (!commands) {
