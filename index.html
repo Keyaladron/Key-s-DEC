@@ -85,10 +85,10 @@
 
     dropArea.addEventListener('drop', (event) => {
       event.preventDefault();
-      selectedFile = event.dataTransfer.files[0];
-      console.log('File dropped:', selectedFile.path);
-      fileLabel.innerText = selectedFile.path;
-      outputFolder = path.dirname(selectedFile.path);
+      selectedFile = event.dataTransfer.files[0].path;
+      console.log('File dropped:', selectedFile);
+      fileLabel.innerText = selectedFile;
+      outputFolder = path.dirname(selectedFile);
       saveLocation.innerText = `Save Location: ${outputFolder}`;
     });
 
@@ -96,10 +96,15 @@
       ipcRenderer.invoke('open-file-dialog').then((file) => {
         if (file) {
           selectedFile = file;
+          console.log('File selected via browse:', selectedFile);
           fileLabel.innerText = selectedFile;
           outputFolder = path.dirname(file);
           saveLocation.innerText = `Save Location: ${outputFolder}`;
+        } else {
+          console.log('No file selected');
         }
+      }).catch(error => {
+        console.error('Error opening file dialog:', error);
       });
     });
 
@@ -108,7 +113,11 @@
         if (folder) {
           outputFolder = folder;
           saveLocation.innerText = `Save Location: ${folder}`;
+        } else {
+          console.log('No folder selected');
         }
+      }).catch(error => {
+        console.error('Error opening save dialog:', error);
       });
     });
 
@@ -118,8 +127,8 @@
         return;
       }
       const conversionType = toggle.checked ? 'nitro' : 'basic';
-      console.log('Starting conversion for:', selectedFile.path);
-      ipcRenderer.send('convert', { file: selectedFile.path, type: conversionType, outputFolder });
+      console.log('Starting conversion for:', selectedFile);
+      ipcRenderer.send('convert', { file: selectedFile, type: conversionType, outputFolder });
       conversionInProgress = true;
       progressBar.style.display = 'block';
       convertButton.style.display = 'none';
