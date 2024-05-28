@@ -1,8 +1,11 @@
+const path = require('path');
 const { execSync } = require('child_process');
+
+const ffprobePath = path.join(__dirname, 'binaries', 'ffprobe' + (process.platform === 'win32' ? '.exe' : ''));
 
 function getVideoDuration(inputFile) {
   try {
-    const result = execSync(`ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${inputFile}"`);
+    const result = execSync(`"${ffprobePath}" -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${inputFile}"`);
     return parseFloat(result.toString().trim());
   } catch (e) {
     console.error(`Error extracting duration: ${e}`);
@@ -12,7 +15,7 @@ function getVideoDuration(inputFile) {
 
 function getVideoResolution(inputFile) {
   try {
-    const result = execSync(`ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "${inputFile}"`);
+    const result = execSync(`"${ffprobePath}" -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "${inputFile}"`);
     const [width, height] = result.toString().trim().split('x').map(Number);
     return { width, height };
   } catch (e) {
