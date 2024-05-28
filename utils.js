@@ -37,13 +37,13 @@ function getFfmpegCommands(conversionType, inputFile, outputFile) {
   const maxWidth = 4096;
   const maxHeight = 1440;
 
-  let scaleOption = "";
+  let scaleOption = [];
   if (width > maxWidth || height > maxHeight) {
-    scaleOption = `-vf scale=${maxWidth}:${maxHeight}`;
+    scaleOption = ['-vf', `scale=${maxWidth}:${maxHeight}`];
   }
 
-  const pass1 = `ffmpeg -y -i "${inputFile}" ${scaleOption} -r 60 -c:v h264_nvenc -b:v ${videoBitrateKbps}k -pass 1 -an -f null NUL`;
-  const pass2 = `ffmpeg -i "${inputFile}" ${scaleOption} -r 60 -c:v h264_nvenc -b:v ${videoBitrateKbps}k -pass 2 -c:a aac -b:a 192k "${outputFile}"`;
+  const pass1 = ['-y', '-i', inputFile, ...scaleOption, '-r', '60', '-c:v', 'h264_nvenc', '-b:v', `${videoBitrateKbps}k`, '-pass', '1', '-an', '-f', 'null', 'NUL'];
+  const pass2 = ['-i', inputFile, ...scaleOption, '-r', '60', '-c:v', 'h264_nvenc', '-b:v', `${videoBitrateKbps}k`, '-pass', '2', '-c:a', 'aac', '-b:a', '192k', outputFile];
 
   return { pass1, pass2 };
 }

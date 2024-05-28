@@ -1,10 +1,11 @@
 const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
 const path = require('path');
-const { exec, execSync } = require('child_process');
+const { spawn } = require('child_process');
 const fs = require('fs');
 const { getFfmpegCommands, getVideoDuration } = require('./utils');
 
 let currentProcess = null;
+const ffmpegPath = path.join(__dirname, 'binaries', 'ffmpeg' + (process.platform === 'win32' ? '.exe' : ''));
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -55,11 +56,11 @@ ipcMain.on('convert', (event, { file, type, outputFolder }) => {
   if (!outputFolder) {
     outputFolder = path.dirname(file);
   }
-  
+
   const timestamp = new Date().toISOString().replace(/[-:.]/g, '');
   const output_file = path.join(outputFolder, `${path.basename(file, path.extname(file))}_${timestamp}_${type}.mp4`);
   const commands = getFfmpegCommands(type, file, output_file);
-  
+
   if (!commands) {
     event.sender.send('conversion-result', 'Error generating ffmpeg commands');
     return;
@@ -67,15 +68,15 @@ ipcMain.on('convert', (event, { file, type, outputFolder }) => {
 
   const duration = getVideoDuration(file);
 
-  console.log(`Running command: ${commands.pass1}`);
-  currentProcess = exec(commands.pass1);
+  console.log(`Running command: ${ffmpegPath} ${commands.pass1.join(' ')}`);
+  currentProcess = spawn(ffmpegPath, commands.pass1);
 
   currentProcess.stdout.on('data', (data) => {
     console.log(`Pass 1: ${data}`);
   });
 
   currentProcess.stderr.on('data', (data) => {
-    const timeMatch = data.match(/time=(\d+:\d+:\d+\.\d+)/);
+    const timeMatch = data.toString().match(/time=(\d+:\d+:\d+\.\d+)/);
     if (timeMatch) {
       const currentTime = parseTimeToSeconds(timeMatch[1]);
       const progress = (currentTime / duration) * 50;
@@ -90,15 +91,15 @@ ipcMain.on('convert', (event, { file, type, outputFolder }) => {
       return;
     }
 
-    console.log(`Running command: ${commands.pass2}`);
-    currentProcess = exec(commands.pass2);
+    console.log(`Running command: ${ffmpegPath} ${commands.pass2.join(' ')}`);
+    currentProcess = spawn(ffmpegPath, commands.pass2);
 
     currentProcess.stdout.on('data', (data) => {
       console.log(`Pass 2: ${data}`);
     });
 
     currentProcess.stderr.on('data', (data) => {
-      const timeMatch = data.match(/time=(\d+:\d+:\d+\.\d+)/);
+      const timeMatch = data.toString().match(/time=(\d+:\d+:\d+\.\d+)/);
       if (timeMatch) {
         const currentTime = parseTimeToSeconds(timeMatch[1]);
         const progress = 50 + (currentTime / duration) * 50;
