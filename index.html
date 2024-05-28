@@ -86,6 +86,7 @@
     dropArea.addEventListener('drop', (event) => {
       event.preventDefault();
       selectedFile = event.dataTransfer.files[0];
+      console.log('File dropped:', selectedFile.path);
       fileLabel.innerText = selectedFile.path;
       outputFolder = path.dirname(selectedFile.path);
       saveLocation.innerText = `Save Location: ${outputFolder}`;
@@ -117,7 +118,8 @@
         return;
       }
       const conversionType = toggle.checked ? 'nitro' : 'basic';
-      ipcRenderer.send('convert', { file: selectedFile, type: conversionType, outputFolder });
+      console.log('Starting conversion for:', selectedFile.path);
+      ipcRenderer.send('convert', { file: selectedFile.path, type: conversionType, outputFolder });
       conversionInProgress = true;
       progressBar.style.display = 'block';
       convertButton.style.display = 'none';
